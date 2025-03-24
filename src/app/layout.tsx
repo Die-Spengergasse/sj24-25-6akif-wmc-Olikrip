@@ -4,6 +4,11 @@ import { TodoAppStateProvider } from "./context/TodoAppContext";
 import ErrorViewer from "./components/ErrorViewer";
 import NameInput from "./components/NameInput";
 
+export const metadata = {
+    title: "Todo App",
+    description: "Frontend für Todo-Backend",
+};
+
 export default function RootLayout({
     children,
 }: {
@@ -23,9 +28,10 @@ export default function RootLayout({
             <body>
                 <TodoAppStateProvider>
                     <div className="container">
-                        <Navbar />
+                    <Navbar />
                         <main className="content">{children}</main>
-                        <ErrorViewer />
+                        <NameInput /> 
+                    <ErrorViewer />
                     </div>
                 </TodoAppStateProvider>
             </body>

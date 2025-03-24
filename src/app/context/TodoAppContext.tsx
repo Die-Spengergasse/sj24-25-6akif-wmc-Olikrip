@@ -14,7 +14,7 @@ type TodoAppStateActions = {
     /**
      * Setzt den aktiven Benutzer im globalen State.
      */
-    setActiveUser: (value: string) => void;
+    setActiveUser: (value: string | null) => void;
 };
 
 /**
@@ -39,7 +39,7 @@ const TodoAppContext = createContext<TodoAppContextType | undefined>(undefined);
  * Stellt den State und Funktionen zur Aktualisierung zur Verfügung.
  */
 export function TodoAppStateProvider({ children }: { children: ReactNode }) {
-    const [state, setState] = useState<TodoAppState>({ error: "", activeUser: "" });
+    const [state, setState] = useState<TodoAppState>({ error: "", activeUser: null });
 
     /**
      * Aktualisiert die Fehlermeldung im State.
@@ -66,7 +66,7 @@ export function TodoAppStateProvider({ children }: { children: ReactNode }) {
  * @throws {Error} Falls der Hook außerhalb eines `TodoAppStateProvider` verwendet wird.
  * @returns {TodoAppContextType} Der aktuelle State und die Actions.
  */
-export function useTodoAppState() {
+export function useTodoAppState(): TodoAppContextType {
     const context = useContext(TodoAppContext);
     if (!context) {
         throw new Error('useTodoAppState must be used within a TodoAppStateProvider.');
