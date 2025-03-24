@@ -1,0 +1,30 @@
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+    font-size: 24px;
+    color: #333;
+}
+
+.text { 
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.ratingList { 
+    list-style: none;
+    padding: 0;
+}
+
+.ratingItem { 
+    background: #f4f4f4;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 5px;
+}
