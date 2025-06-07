@@ -1,37 +1,36 @@
-import Link from 'next/link';
-import { getTopicsByModule, Topic } from '@/lib/apiClient';
+﻿'use client';
 
-interface ModulePageProps {
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getTopicsByModule, Topic } from '@/lib/apiClient';
+import TopicList from '@/components/TopicList';
+import Loader from '@/components/Loader';
+
+interface Props {
     params: { moduleId: string };
 }
 
-export default async function ModulePage({ params }: ModulePageProps) {
+export default function ModulePage({ params }: Props) {
     const { moduleId } = params;
-    let topics: Topic[] = [];
+    const router = useRouter();
+    const [topics, setTopics] = useState<Topic[] | null>(null);
 
-    try {
-        topics = await getTopicsByModule(moduleId);
-    } catch (err) {
-        console.error(err);
-    }
+    useEffect(() => {
+        getTopicsByModule(moduleId)
+            .then((data) => setTopics(data))
+            .catch(() => setTopics([]));
+    }, [moduleId]);
+
+    if (topics === null) return <Loader />;
 
     return (
         <div>
-            <h2>Themen zum Modul</h2>
-            {topics.length === 0 && <p>Keine Themen gefunden.</p>}
-            <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
-                {topics.map((topic) => (
-                    <li key={topic.guid} style={{ marginBottom: '0.75rem' }}>
-                        <Link
-                            href={`/modules/${moduleId}/topics/${topic.guid}`}
-                            style={{ fontSize: '1rem' }}
-                        >
-                            {topic.name}
-                        </Link>
-                    </li>
-                ))}
-            </ul>
-            <button onClick={() => window.history.back()}>? Zur�ck zu Module</button>
+            <h2>Themen dieses Moduls</h2>
+            <TopicList moduleId={moduleId} topics={topics} />
+
+            <button onClick={() => router.push('/')} style={{ marginTop: '2rem' }}>
+                ← Zurück zu Modulen
+            </button>
         </div>
     );
 }

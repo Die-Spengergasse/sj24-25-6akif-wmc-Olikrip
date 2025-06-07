@@ -67,6 +67,6 @@ export async function checkAnswers(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error('Fehler bei der Antwortüberprüfung');
+    if (!res.ok) throw new Error('Fehler bei der Antwort berpr fung');
     return res.json();
 }

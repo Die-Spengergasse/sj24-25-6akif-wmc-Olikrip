@@ -1,159 +1,99 @@
 ﻿'use client';
 
-import { useRouter } from 'next/router';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { getQuestions, checkAnswers, Question, CheckResult } from '@/lib/apiClient';
+import {
+    getQuestions,
+    checkAnswers,
+    Question,
+    CheckResult,
+} from '@/lib/apiClient';
+import Loader from '@/components/Loader';
+import QuestionCard from '@/components/QuestionCard';
+import QuestionNavigator from '@/components/QuestionNavigator';
 
-interface TopicQuestionsPageProps {
-    params: { moduleId: string; topicId: string };
-}
-
-export default function TopicQuestionsPage({ params }: TopicQuestionsPageProps) {
-    const { moduleId, topicId } = params;
+export default function TopicQuestionsPage() {
+    const { moduleId, topicId } = useParams() as {
+        moduleId: string;
+        topicId: string;
+    };
     const router = useRouter();
 
-    const [questions, setQuestions] = useState<Question[]>([]);
+    const [questions, setQuestions] = useState<Question[] | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [selected, setSelected] = useState<{ [guid: string]: boolean }>({});
-    const [checkResult, setCheckResult] = useState<CheckResult['checkResult'] | null>(null);
+    const [selected, setSelected] = useState<Record<string, boolean>>({});
+    const [checkResult, setCheckResult] = useState<CheckResult['checkResult'] | null>(
+        null
+    );
     const [isChecked, setIsChecked] = useState(false);
 
     useEffect(() => {
-        async function fetchQuestions() {
-            try {
-                const data = await getQuestions(moduleId, topicId);
-                const shuffledQuestions = data.map((q) => ({
+        getQuestions(moduleId, topicId)
+            .then((data) => {
+                // Antworten mischen
+                const shuffled = data.map((q) => ({
                     ...q,
-                    answers: shuffleArray(q.answers),
+                    answers: q.answers.sort(() => Math.random() - 0.5),
                 }));
-                setQuestions(shuffledQuestions);
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        if (moduleId && topicId) {
-            fetchQuestions();
-        }
+                setQuestions(shuffled);
+            })
+            .catch(() => setQuestions([]));
     }, [moduleId, topicId]);
 
-    function shuffleArray<T>(arr: T[]): T[] {
-        const copy = [...arr];
-        for (let i = copy.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [copy[i], copy[j]] = [copy[j], copy[i]];
-        }
-        return copy;
-    }
-
-    if (!moduleId || !topicId) return <p>Lädt…</p>;
+    if (questions === null) return <Loader />;
     if (questions.length === 0) return <p>Keine Fragen gefunden.</p>;
-    if (currentIndex < 0 || currentIndex >= questions.length)
-        return <p>Ungültiger Fragen-Index</p>;
 
-    const currentQuestion = questions[currentIndex];
+    const question = questions[currentIndex];
 
-    function handleCheckboxChange(answerGuid: string) {
-        setSelected((prev) => ({
-            ...prev,
-            [answerGuid]: !prev[answerGuid],
-        }));
+    function toggleAnswer(guid: string) {
+        setSelected((s) => ({ ...s, [guid]: !s[guid] }));
     }
 
     async function handleCheck() {
-        // Payload aufbauen
-        const payloadArray = currentQuestion.answers.map((ans) => ({
-            guid: ans.guid,
-            isChecked: !!selected[ans.guid],
+        const payload = question.answers.map((a) => ({
+            guid: a.guid,
+            isChecked: !!selected[a.guid],
         }));
-
-        try {
-            const result = await checkAnswers(currentQuestion.guid, payloadArray);
-            setCheckResult(result.checkResult);
-            setIsChecked(true);
-        } catch (err) {
-            console.error(err);
-            alert('Fehler bei der Antwortüberprüfung');
-        }
+        const result = await checkAnswers(question.guid, payload);
+        setCheckResult(result.checkResult);
+        setIsChecked(true);
     }
 
-    function handleNextQuestion() {
-        setCurrentIndex((prev) => prev + 1);
+    function handleNext() {
+        setCurrentIndex((i) => i + 1);
         setSelected({});
         setCheckResult(null);
         setIsChecked(false);
     }
-    const isLastQuestion = currentIndex === questions.length - 1;
 
     return (
         <div>
             <h2>
                 Frage {currentIndex + 1} von {questions.length}
             </h2>
-            <p style={{ margin: '1rem 0', fontWeight: 'bold' }}>{currentQuestion.text}</p>
 
-            {/* 6) Bild anzeigen, falls imageUrl vorhanden */}
-            {currentQuestion.imageUrl && (
-                <img
-                    src={currentQuestion.imageUrl}
-                    alt="Fragenbild"
-                    style={{ maxWidth: '300px', marginBottom: '1rem' }}
-                />
-            )}
+            <QuestionCard
+                question={question}
+                selected={selected}
+                onToggle={toggleAnswer}
+                checkResult={checkResult}
+                isChecked={isChecked}
+            />
 
-            {/* 7) Antwortoptionen mit Checkboxes */}
-            <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
-                {currentQuestion.answers.map((ans) => {
-                    // 8) Wenn bereits geprüft: Farben festlegen
-                    let style: React.CSSProperties = {};
-                    if (isChecked && checkResult) {
-                        const richtig = checkResult[ans.guid]; // true: der User hat korrekt gewählt/ nicht gewählt?
-                        const userChecked = !!selected[ans.guid];
-                        // 1) userChecked=true & richtig=true  → hellgrün
-                        if (userChecked && richtig) style = { backgroundColor: '#d4edda' };
-                        // 2) userChecked=true & richtig=false → hellrot
-                        else if (userChecked && !richtig) style = { backgroundColor: '#f8d7da' };
-                        // 3) userChecked=false & richtig=true → gelb (User hat das anklicken müssen)
-                        else if (!userChecked && richtig) style = { backgroundColor: '#fff3cd' };
-                        // 4) userChecked=false & richtig=false → keine Hervorhebung
-                    }
+            <QuestionNavigator
+                currentIndex={currentIndex}
+                total={questions.length}
+                isChecked={isChecked}
+                onCheck={handleCheck}
+                onNext={handleNext}
+            />
 
-                    return (
-                        <li key={ans.guid} style={{ marginBottom: '0.75rem', padding: '0.5rem', ...style }}>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    disabled={isChecked} // nach Check nicht mehr umschaltbar
-                                    checked={!!selected[ans.guid]}
-                                    onChange={() => handleCheckboxChange(ans.guid)}
-                                    style={{ marginRight: '0.5rem' }}
-                                />
-                                {ans.text}
-                            </label>
-                        </li>
-                    );
-                })}
-            </ul>
-
-            {/* 9) Buttons: „Antwort prüfen“ oder „Nächste Frage“ */}
-            <div style={{ marginTop: '1rem' }}>
-                {!isChecked && (
-                    <button onClick={handleCheck} style={{ marginRight: '0.5rem' }}>
-                        Antwort prüfen
-                    </button>
-                )}
-                {isChecked && !isLastQuestion && (
-                    <button onClick={handleNextQuestion}>Nächste Frage →</button>
-                )}
-                {isChecked && isLastQuestion && (
-                    <button disabled>Letzte Frage erreicht</button>
-                )}
-            </div>
-
-            {/* 10) Zurück-Button */}
-            <div style={{ marginTop: '2rem' }}>
-                <button onClick={() => router.back()}>← Zurück zu Themen</button>
-            </div>
+            <button
+                onClick={() => router.push(`/modules/${moduleId}`)}
+                style={{ marginTop: '2rem' }}
+            >
+                ← Zurück zu Themen
+            </button>
         </div>
     );
 }
