@@ -1,21 +1,21 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getTopicsByModule, Topic } from '@/lib/apiClient';
 import TopicList from '@/components/TopicList';
 import Loader from '@/components/Loader';
 
-interface Props {
-    params: { moduleId: string };
-}
 
-export default function ModulePage({ params }: Props) {
-    const { moduleId } = params;
+export default function ModulePage()
+{
+    const { moduleId } = useParams() as { moduleId: string };
     const router = useRouter();
+
     const [topics, setTopics] = useState<Topic[] | null>(null);
 
     useEffect(() => {
+        if (!moduleId) return;
         getTopicsByModule(moduleId)
             .then((data) => setTopics(data))
             .catch(() => setTopics([]));

@@ -1,4 +1,4 @@
-import { AnswerOption, CheckResult, Question } from '@/lib/apiClient';
+import { CheckResult, Question } from '@/lib/apiClient';
 
 interface QuestionCardProps {
     question: Question;
